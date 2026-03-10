@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-skull"
+version = "0.1.0"
+description = "Project Skull: a modular LLM training framework."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "PyYAML>=6.0",
+  "sentencepiece>=0.2.0",
+  "torch>=2.2",
+  "transformers>=4.40",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["skull*"]

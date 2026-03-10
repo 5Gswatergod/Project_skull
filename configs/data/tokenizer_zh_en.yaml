@@ -1,0 +1,90 @@
+# configs/data/tokenizer_zh_en.yaml
+
+version: 1
+project: skull
+name: skull_zh_en_100k
+description: >
+  SentencePiece tokenizer config for Project Skull.
+  Optimized for Chinese / English mixed corpora and long-form pretraining text.
+
+trainer:
+  backend: sentencepiece
+  model_type: bpe
+  vocab_size: 100000
+
+input:
+  source: data/tokenizer/tokenizer_sample.txt
+  format: text
+  encoding: utf-8
+
+output:
+  output_dir: data/tokenizer
+  model_prefix: skull_zh_en_100k
+  model_file: data/tokenizer/skull_zh_en_100k.model
+  vocab_file: data/tokenizer/skull_zh_en_100k.vocab
+
+special_tokens:
+  unk_id: 0
+  bos_id: 1
+  eos_id: 2
+  pad_id: 3
+
+  unk_piece: "<unk>"
+  bos_piece: "<s>"
+  eos_piece: "</s>"
+  pad_piece: "<pad>"
+
+normalization:
+  normalization_rule_name: nmt_nfkc
+  remove_extra_whitespaces: true
+  escape_whitespaces: true
+
+segmentation:
+  character_coverage: 0.9995
+  split_by_unicode_script: false
+  split_by_whitespace: true
+  split_digits: false
+  allow_whitespace_only_pieces: false
+
+  # 中文 / 中英混合常見需求
+  byte_fallback: false
+  treat_whitespace_as_suffix: false
+
+training:
+  shuffle_input_sentence: true
+  input_sentence_size: 2000000
+  seed_sentencepiece_size: 1000000
+  train_extremely_large_corpus: true
+
+  max_sentence_length: 16384
+  num_threads: 8
+
+  # subword regularization related
+  self_test_sample_size: 0
+
+vocabulary:
+  hard_vocab_limit: false
+  use_all_vocab: false
+  vocabulary_output_piece_score: true
+
+control_symbols: []
+user_defined_symbols:
+  - "<pad>"
+  - "<system>"
+  - "<user>"
+  - "<assistant>"
+
+meta:
+  language: zh-en
+  intended_use:
+    - pretraining
+    - continued_pretraining
+    - sft
+  compatible_block_sizes:
+    - 512
+    - 1024
+    - 2048
+
+logging:
+  verbose: true
+  log_file: runs/tokenizer/skull_zh_en_100k.log

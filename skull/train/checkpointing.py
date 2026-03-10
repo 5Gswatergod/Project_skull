@@ -1,61 +1,71 @@
 from __future__ import annotations
 
-import math
+from pathlib import Path
+from typing import Any, Optional
 
-from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LambdaLR
-
-
-def get_lr_lambda(
-    schedule_type: str,
-    warmup_steps: int,
-    max_steps: int,
-    min_lr_ratio: float = 0.1,
-):
-    schedule_type = str(schedule_type).lower()
-    warmup_steps = max(0, int(warmup_steps))
-    max_steps = max(1, int(max_steps))
-    min_lr_ratio = float(min_lr_ratio)
-
-    def lr_lambda(step: int) -> float:
-        if warmup_steps > 0 and step < warmup_steps:
-            return float(step + 1) / float(max(1, warmup_steps))
-
-        if schedule_type == "constant":
-            return 1.0
-
-        progress = (step - warmup_steps) / float(max(1, max_steps - warmup_steps))
-        progress = min(max(progress, 0.0), 1.0)
-
-        if schedule_type == "linear":
-            return max(min_lr_ratio, 1.0 - (1.0 - min_lr_ratio) * progress)
-
-        if schedule_type == "cosine":
-            cosine = 0.5 * (1.0 + math.cos(math.pi * progress))
-            return min_lr_ratio + (1.0 - min_lr_ratio) * cosine
-
-        raise ValueError(f"Unsupported schedule_type: {schedule_type}")
-
-    return lr_lambda
+import torch
 
 
-def build_lr_scheduler(
-    optimizer: Optimizer,
-    cfg: dict,
-) -> LambdaLR:
-    schedule_type = cfg.get("lr_schedule", "cosine")
-    warmup_steps = int(cfg.get("warmup_steps", 0))
-    max_steps = int(cfg.get("max_steps", 1000))
-    base_lr = float(cfg.get("lr", 3e-4))
-    min_lr = float(cfg.get("min_lr", base_lr * 0.1))
-    min_lr_ratio = min_lr / max(base_lr, 1e-12)
+def latest_checkpoint_path(run_dir: str | Path) -> Optional[Path]:
+    run_dir = Path(run_dir)
+    latest = run_dir / "latest.pt"
+    if latest.exists():
+        return latest
 
-    return LambdaLR(
-        optimizer,
-        lr_lambda=get_lr_lambda(
-            schedule_type=schedule_type,
-            warmup_steps=warmup_steps,
-            max_steps=max_steps,
-            min_lr_ratio=min_lr_ratio,
-        ),
-    )
+    ckpts = sorted(run_dir.glob("step_*.pt"))
+    if ckpts:
+        return ckpts[-1]
+    return None
+
+
+def save_checkpoint(
+    path: str | Path,
+    model,
+    optimizer=None,
+    scheduler=None,
+    scaler=None,
+    step: int = 0,
+    best_val_loss: float | None = None,
+    extra_state: dict[str, Any] | None = None,
+) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    state = {
+        "model": model.state_dict(),
+        "step": int(step),
+        "best_val_loss": best_val_loss,
+        "extra_state": extra_state or {},
+    }
+
+    if optimizer is not None:
+        state["optimizer"] = optimizer.state_dict()
+    if scheduler is not None:
+        state["scheduler"] = scheduler.state_dict()
+    if scaler is not None:
+        state["scaler"] = scaler.state_dict()
+
+    torch.save(state, path)
+
+
+def load_checkpoint(
+    path: str | Path,
+    model,
+    optimizer=None,
+    scheduler=None,
+    scaler=None,
+    map_location: str = "cpu",
+    strict: bool = True,
+) -> dict:
+    state = torch.load(path, map_location=map_location)
+
+    model.load_state_dict(state["model"], strict=strict)
+
+    if optimizer is not None and "optimizer" in state:
+        optimizer.load_state_dict(state["optimizer"])
+    if scheduler is not None and "scheduler" in state:
+        scheduler.load_state_dict(state["scheduler"])
+    if scaler is not None and "scaler" in state:
+        scaler.load_state_dict(state["scaler"])
+
+    return state

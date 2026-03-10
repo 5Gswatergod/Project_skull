@@ -12,6 +12,14 @@ from skull.cli.utils import (
 from skull.train import load_checkpoint
 
 
+def _resolve_device(requested: str | None) -> torch.device:
+    name = str(requested or ("cuda" if torch.cuda.is_available() else "cpu"))
+    if name.startswith("cuda") and not torch.cuda.is_available():
+        print("[warn] CUDA requested but not available, falling back to CPU.")
+        name = "cpu"
+    return torch.device(name)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Project Skull sample CLI")
     parser.add_argument("--config", required=True, help="Path to train/eval yaml")
@@ -33,9 +41,7 @@ def main():
 
     load_checkpoint(args.ckpt, model=model, map_location="cpu", strict=True)
 
-    device = torch.device(
-        cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")
-    )
+    device = _resolve_device(cfg.get("device"))
     model.to(device)
     model.eval()
 

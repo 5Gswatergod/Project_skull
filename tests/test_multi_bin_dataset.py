@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 
 from skull.data import MultiBinDataset
@@ -78,3 +79,26 @@ def test_multi_bin_dataset_basic(tmp_path: Path):
     summary = ds.summary()
     assert summary["block_size"] == block_size
     assert len(summary["sources"]) == 2
+
+
+def test_multi_bin_dataset_index_bounds(tmp_path: Path):
+    block_size = 4
+    row_tokens = block_size + 1
+
+    src = tmp_path / "src.bin"
+    _write_bin(src, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    ds = MultiBinDataset(
+        sources=[{"name": "a", "paths": [str(src)], "weight": 1.0}],
+        block_size=block_size,
+        dtype="uint32",
+        row_tokens=row_tokens,
+        nominal_size=3,
+        seed=123,
+    )
+
+    with pytest.raises(IndexError):
+        _ = ds[-1]
+
+    with pytest.raises(IndexError):
+        _ = ds[3]

@@ -5,33 +5,42 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class LayerNorm(nn.Module):
-    def __init__(self, ndim: int, bias: bool = True, eps: float = 1e-5):
+class MLP(nn.Module):
+    def __init__(self, config) -> None:
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(ndim))
-        self.bias = nn.Parameter(torch.zeros(ndim)) if bias else None
-        self.eps = eps
+        hidden = max(1, int(config.n_embd * float(config.mlp_hidden_mult)))
+        self.fc = nn.Linear(config.n_embd, hidden, bias=config.bias)
+        self.proj = nn.Linear(hidden, config.n_embd, bias=config.bias)
+        self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return F.layer_norm(x, self.weight.shape, self.weight, self.bias, self.eps)
+        x = self.fc(x)
+        x = F.gelu(x, approximate="tanh")
+        x = self.proj(x)
+        x = self.dropout(x)
+        return x
 
 
-class RMSNorm(nn.Module):
-    def __init__(self, ndim: int, eps: float = 1e-5):
+class SwiGLUMLP(nn.Module):
+    def __init__(self, config) -> None:
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(ndim))
-        self.eps = eps
+        hidden = max(1, int(config.n_embd * float(config.mlp_hidden_mult)))
+        self.w_gate = nn.Linear(config.n_embd, hidden, bias=config.bias)
+        self.w_up = nn.Linear(config.n_embd, hidden, bias=config.bias)
+        self.w_down = nn.Linear(hidden, config.n_embd, bias=config.bias)
+        self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        rms = x.pow(2).mean(dim=-1, keepdim=True)
-        x = x * torch.rsqrt(rms + self.eps)
-        return x * self.weight
+        x = F.silu(self.w_gate(x)) * self.w_up(x)
+        x = self.w_down(x)
+        x = self.dropout(x)
+        return x
 
 
-def build_norm(norm_type: str, ndim: int, bias: bool = True, eps: float = 1e-5):
-    norm_type = str(norm_type).lower()
-    if norm_type == "layernorm":
-        return LayerNorm(ndim, bias=bias, eps=eps)
-    if norm_type == "rmsnorm":
-        return RMSNorm(ndim, eps=eps)
-    raise ValueError(f"Unsupported norm type: {norm_type}")
+def build_mlp(config) -> nn.Module:
+    mlp_type = str(getattr(config, "mlp_type", "gelu")).lower()
+    if mlp_type == "gelu":
+        return MLP(config)
+    if mlp_type == "swiglu":
+        return SwiGLUMLP(config)
+    raise ValueError(f"Unsupported mlp_type: {mlp_type}")

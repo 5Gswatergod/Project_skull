@@ -1,29 +1,24 @@
-import sentencepiece as spm
 from pathlib import Path
 
-
-class Tokenizer:
-    def __init__(self, model_path: Path):
-        self.sp = spm.SentencePieceProcessor()
-        self.sp.Load(str(model_path))
-
-    def encode(self, text: str) -> list[int]:
-        return self.sp.Encode(text, out_type=int)
-
-    def decode(self, ids: list[int]) -> str:
-        return self.sp.Decode(ids)
-
-    @property
-    def vocab_size(self) -> int:
-        return int(self.sp.GetPieceSize())
+from .sentencepiece_wrapper import SentencePieceTokenizer
 
 
-def load_tokenizer(model_path: str | None = None) -> Tokenizer:
+Tokenizer = SentencePieceTokenizer
+
+
+def load_tokenizer(model_path: str | Path | None = None) -> SentencePieceTokenizer:
     path = (
         Path(model_path)
         if model_path
         else Path("data/tokenizer/zh_trad_en_100k_bpe.model")
     )
-    if not path.exists():
-        raise FileNotFoundError(f"Missing SentencePiece model: {path.resolve()}")
-    return Tokenizer(path)
+    return SentencePieceTokenizer(path)
+
+
+def build_tokenizer(cfg: dict) -> SentencePieceTokenizer:
+    model_path = cfg.get("tokenizer_model") or cfg.get("model_path")
+    if not model_path:
+        raise ValueError(
+            "Tokenizer config must contain 'tokenizer_model' or 'model_path'"
+        )
+    return load_tokenizer(model_path)

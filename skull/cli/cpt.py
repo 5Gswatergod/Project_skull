@@ -8,12 +8,12 @@ from skull.cli.utils import (
     load_yaml,
     print_model_summary,
 )
-from skull.train import PretrainTrainer
+from skull.train import CPTTrainer
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Project Skull pretraining CLI")
-    parser.add_argument("--config", required=True, help="Path to pretrain yaml")
+    parser = argparse.ArgumentParser(description="Project Skull CPT CLI")
+    parser.add_argument("--config", required=True, help="Path to cpt yaml")
     return parser.parse_args()
 
 
@@ -26,7 +26,7 @@ def main():
 
     print_model_summary(model)
 
-    trainer = PretrainTrainer(
+    trainer = CPTTrainer(
         cfg=cfg,
         model=model,
         tokenizer=tokenizer,

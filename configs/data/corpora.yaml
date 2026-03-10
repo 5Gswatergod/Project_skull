@@ -1,0 +1,345 @@
+# configs/data/corpora.yaml
+
+version: 1
+project: skull
+description: >
+  Master corpus registry for Project Skull.
+  This file defines raw corpora locations, cleaning rules, tokenizer sampling,
+  bin build outputs, and default training mix weights.
+
+global:
+  encoding: utf-8
+  language: zh-en
+  output_root: data
+  random_seed: 42
+
+  splits:
+    train_ratio: 0.995
+    val_ratio: 0.005
+
+  cleaning:
+    enabled: true
+    strip_whitespace: true
+    normalize_unicode: true
+    remove_urls: true
+    remove_html: true
+    collapse_blank_lines: true
+    min_chars: 20
+    max_chars: 20000
+    drop_non_text_heavy: true
+    dedup:
+      enabled: false
+      mode: exact_hash   # exact_hash | minhash
+    filters:
+      blacklist_files: []
+      blacklist_patterns: []
+
+  tokenizer_sampling:
+    enabled: true
+    output_file: data/tokenizer/tokenizer_sample.txt
+    strategy: weighted_docs
+    max_documents: 2000000
+    max_chars_per_doc: 4000
+
+  binning:
+    enabled: true
+    dtype: uint32
+    append_eos: true
+    shard_size_tokens: 100000000
+    output_root: data/bins
+
+  manifests:
+    corpus_manifest: data/manifest/corpora_manifest.json
+    bin_manifest: data/manifest/bin_manifest.json
+
+defaults:
+  source:
+    enabled: true
+    format: txt            # txt | jsonl | parquet
+    text_key: text
+    path_glob: "**/*"
+    recursive: true
+
+    clean_output:
+      write_clean_text: true
+      write_doc_meta: true
+
+    tokenizer_sampling_weight: 1.0
+    pretrain_weight: 1.0
+    cpt_weight: 1.0
+
+    tags: []
+    license: unknown
+    domain: general
+    lang: zh-en
+
+sources:
+
+  - name: wiki
+    enabled: true
+    format: txt
+    path: data/corpus/raw/wiki
+    path_glob: "**/*.txt"
+    recursive: true
+
+    domain: knowledge
+    lang: zh-en
+    license: cc-by-sa
+    tags: [encyclopedia, factual, reference]
+
+    clean_output:
+      clean_text_path: data/clean/wiki.txt
+      meta_path: data/clean/wiki.meta.jsonl
+
+    tokenizer_sampling_weight: 1.5
+    pretrain_weight: 1.0
+    cpt_weight: 0.5
+
+    bin_output:
+      output_dir: data/bins/wiki
+      train_prefix: train
+      val_prefix: val
+
+  - name: books
+    enabled: true
+    format: txt
+    path: data/corpus/raw/books
+    path_glob: "**/*.txt"
+    recursive: true
+
+    domain: literature
+    lang: zh-en
+    license: private
+    tags: [novel, longform, narrative]
+
+    clean_output:
+      clean_text_path: data/clean/books.txt
+      meta_path: data/clean/books.meta.jsonl
+
+    tokenizer_sampling_weight: 2.0
+    pretrain_weight: 2.0
+    cpt_weight: 2.0
+
+    bin_output:
+      output_dir: data/bins/books
+      train_prefix: train
+      val_prefix: val
+
+  - name: web
+    enabled: true
+    format: jsonl
+    path: data/corpus/raw/web
+    path_glob: "**/*.jsonl"
+    recursive: true
+    text_key: text
+
+    domain: web
+    lang: zh-en
+    license: unknown
+    tags: [crawl, forum, article]
+
+    clean_output:
+      clean_text_path: data/clean/web.txt
+      meta_path: data/clean/web.meta.jsonl
+
+    tokenizer_sampling_weight: 1.0
+    pretrain_weight: 1.0
+    cpt_weight: 0.3
+
+    bin_output:
+      output_dir: data/bins/web
+      train_prefix: train
+      val_prefix: val
+
+  - name: code
+    enabled: true
+    format: txt
+    path: data/corpus/raw/code
+    path_glob: "**/*.*"
+    recursive: true
+
+    domain: code
+    lang: multi
+    license: mixed
+    tags: [source_code, programming]
+
+    cleaning_overrides:
+      remove_urls: false
+      remove_html: false
+      min_chars: 8
+      max_chars: 50000
+
+    clean_output:
+      clean_text_path: data/clean/code.txt
+      meta_path: data/clean/code.meta.jsonl
+
+    tokenizer_sampling_weight: 0.7
+    pretrain_weight: 0.5
+    cpt_weight: 0.2
+
+    bin_output:
+      output_dir: data/bins/code
+      train_prefix: train
+      val_prefix: val
+
+  - name: dialogue
+    enabled: false
+    format: jsonl
+    path: data/corpus/raw/dialogue
+    path_glob: "**/*.jsonl"
+    recursive: true
+    text_key: text
+
+    domain: conversation
+    lang: zh-en
+    license: private
+    tags: [chat, assistant, qa]
+
+    clean_output:
+      clean_text_path: data/clean/dialogue.txt
+      meta_path: data/clean/dialogue.meta.jsonl
+
+    tokenizer_sampling_weight: 0.8
+    pretrain_weight: 0.3
+    cpt_weight: 1.5
+
+    bin_output:
+      output_dir: data/bins/dialogue
+      train_prefix: train
+      val_prefix: val
+
+build:
+  merged_clean_corpus:
+    enabled: true
+    train_output_path: data/clean/train_clean.txt
+    val_output_path: data/clean/val_clean.txt
+    train_meta_path: data/clean/train.meta.json
+    val_meta_path: data/clean/val.meta.json
+
+    include_sources:
+      - wiki
+      - books
+      - web
+      - code
+
+  tokenizer_corpus:
+    enabled: true
+    output_path: data/tokenizer/tokenizer_sample.txt
+
+    include_sources:
+      - wiki
+      - books
+      - web
+      - code
+
+  bins:
+    enabled: true
+    include_sources:
+      - wiki
+      - books
+      - web
+      - code
+
+mixes:
+
+  pretrain_base:
+    description: General base-model pretraining mixture
+    sources:
+      - name: wiki
+        weight: 1.0
+        paths:
+          - data/bins/wiki/train_000.bin
+          - data/bins/wiki/train_001.bin
+
+      - name: books
+        weight: 2.0
+        paths:
+          - data/bins/books/train_000.bin
+
+      - name: web
+        weight: 1.0
+        paths:
+          - data/bins/web/train_000.bin
+
+      - name: code
+        weight: 0.5
+        paths:
+          - data/bins/code/train_000.bin
+
+    val_sources:
+      - name: wiki_val
+        weight: 1.0
+        paths:
+          - data/bins/wiki/val_000.bin
+
+      - name: books_val
+        weight: 1.0
+        paths:
+          - data/bins/books/val_000.bin
+
+  cpt_novel:
+    description: Continued pretraining mix for novel-heavy domain adaptation
+    sources:
+      - name: books
+        weight: 4.0
+        paths:
+          - data/bins/books/train_000.bin
+
+      - name: wiki
+        weight: 1.0
+        paths:
+          - data/bins/wiki/train_000.bin
+
+      - name: web
+        weight: 0.5
+        paths:
+          - data/bins/web/train_000.bin
+
+    val_sources:
+      - name: books_val
+        weight: 1.0
+        paths:
+          - data/bins/books/val_000.bin
+
+  cpt_code:
+    description: Continued pretraining mix for code adaptation
+    sources:
+      - name: code
+        weight: 5.0
+        paths:
+          - data/bins/code/train_000.bin
+
+      - name: wiki
+        weight: 0.5
+        paths:
+          - data/bins/wiki/train_000.bin
+
+    val_sources:
+      - name: code_val
+        weight: 1.0
+        paths:
+          - data/bins/code/val_000.bin
+
+append:
+  enabled: true
+  registry_file: data/manifest/append_registry.json
+  strategy: incremental
+
+  rules:
+    skip_if_already_registered: true
+    require_unique_source_name: true
+    auto_rebuild_merged_clean: true
+    auto_rebuild_tokenizer_sample: false
+    auto_rebuild_bins_for_new_source: true
+
+stats:
+  enabled: true
+  write_per_source_stats: true
+  write_global_stats: true
+  output_dir: data/manifest/stats
+
+resume:
+  enabled: true
+  state_dir: data/manifest/state
+  cleaning_state_file: data/manifest/state/cleaning_state.json
+  binning_state_file: data/manifest/state/binning_state.json

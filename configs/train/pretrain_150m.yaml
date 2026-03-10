@@ -1,21 +1,60 @@
-vocab_size: 100000
-block_size: 2048
+run_name: skull_150m_base
+run_dir: runs/pretrain/skull_150m_base
 
-n_layer: 24
-n_head: 16
-n_embd: 2048
+tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+model_config: configs/model/skull_150m.yaml
 
-dropout: 0.0
-bias: false
+device: cuda
+mixed_precision: fp16
+seed: 42
+resume: true
 
-norm: rmsnorm
-norm_eps: 1.0e-5
+block_size: 1024
+bin_dtype: uint32
+row_tokens: 1025
 
-pos_encoding: rope
-rope_base: 10000.0
+train_sources:
+  - name: wiki
+    paths:
+      - data/bins/wiki/train_000.bin
+      - data/bins/wiki/train_001.bin
+    weight: 1.0
 
-mlp_type: swiglu
-mlp_hidden_mult: 4.0
+  - name: books
+    paths:
+      - data/bins/books/train_000.bin
+    weight: 2.0
 
-tie_word_embeddings: true
-use_checkpointing: true
+val_sources:
+  - name: wiki_val
+    paths:
+      - data/bins/wiki/val_000.bin
+    weight: 1.0
+
+batch_size: 8
+grad_accum: 8
+max_steps: 200000
+train_nominal_size: 300000
+val_nominal_size: 30000
+eval_batches: 50
+
+optimizer: adamw
+lr: 3.0e-4
+min_lr: 3.0e-5
+lr_schedule: cosine
+warmup_steps: 2000
+weight_decay: 0.1
+betas: [0.9, 0.95]
+eps: 1.0e-8
+grad_clip: 1.0
+
+num_workers: 2
+log_every: 10
+eval_every: 200
+save_every: 200
+sample_every: 500
+sample_max_new_tokens: 96
+
+sample_prompts:
+  - Explain what a tokenizer does in language model training.
+  - Write a short paragraph about building multi-shard datasets.

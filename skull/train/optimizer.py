@@ -1,47 +1,60 @@
 from __future__ import annotations
 
-from typing import Optional
+import inspect
 
 import torch
-import torch.nn.functional as F
 
 
-IGNORE_INDEX = -100
+def split_weight_decay_params(model) -> tuple[list[torch.nn.Parameter], list[torch.nn.Parameter]]:
+    decay: list[torch.nn.Parameter] = []
+    no_decay: list[torch.nn.Parameter] = []
+
+    for _, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        # Standard GPT rule: matrix weights get decay, vectors/scalars do not.
+        if param.dim() >= 2:
+            decay.append(param)
+        else:
+            no_decay.append(param)
+
+    return decay, no_decay
 
 
-def compute_causal_lm_loss(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
-    ignore_index: int = IGNORE_INDEX,
-) -> torch.Tensor:
-    """
-    logits: [B, T, V]
-    labels: [B, T]
-    """
-    if logits.ndim != 3:
-        raise ValueError(f"logits must be 3D [B, T, V], got {tuple(logits.shape)}")
-    if labels.ndim != 2:
-        raise ValueError(f"labels must be 2D [B, T], got {tuple(labels.shape)}")
+def build_optimizer(model, cfg: dict) -> torch.optim.Optimizer:
+    optimizer_name = str(cfg.get("optimizer", "adamw")).lower()
+    lr = float(cfg.get("lr", 3e-4))
+    weight_decay = float(cfg.get("weight_decay", 0.1))
+    betas = tuple(cfg.get("betas", [0.9, 0.95]))
+    eps = float(cfg.get("eps", 1e-8))
 
-    vocab_size = logits.size(-1)
-    loss = F.cross_entropy(
-        logits.reshape(-1, vocab_size),
-        labels.reshape(-1),
-        ignore_index=ignore_index,
-    )
-    return loss
+    decay, no_decay = split_weight_decay_params(model)
+    param_groups = [
+        {"params": decay, "weight_decay": weight_decay},
+        {"params": no_decay, "weight_decay": 0.0},
+    ]
 
+    if optimizer_name == "adamw":
+        kwargs = {
+            "lr": lr,
+            "betas": betas,
+            "eps": eps,
+        }
+        if "fused" in inspect.signature(torch.optim.AdamW).parameters:
+            kwargs["fused"] = bool(
+                cfg.get(
+                    "fused_adamw",
+                    torch.cuda.is_available(),
+                )
+            )
+        return torch.optim.AdamW(param_groups, **kwargs)
 
-@torch.no_grad()
-def masked_token_accuracy(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
-    ignore_index: int = IGNORE_INDEX,
-) -> float:
-    preds = logits.argmax(dim=-1)
-    mask = labels.ne(ignore_index)
-    total = int(mask.sum().item())
-    if total == 0:
-        return 0.0
-    correct = int(((preds == labels) & mask).sum().item())
-    return correct / total
+    if optimizer_name == "adam":
+        return torch.optim.Adam(
+            param_groups,
+            lr=lr,
+            betas=betas,
+            eps=eps,
+        )
+
+    raise ValueError(f"Unsupported optimizer: {optimizer_name}")

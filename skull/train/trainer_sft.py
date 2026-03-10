@@ -20,6 +20,14 @@ from skull.train.optimizer import build_optimizer
 from skull.train.schedulers import build_lr_scheduler
 
 
+def _resolve_device(requested: str | None) -> torch.device:
+    name = str(requested or ("cuda" if torch.cuda.is_available() else "cpu"))
+    if name.startswith("cuda") and not torch.cuda.is_available():
+        print("[warn] CUDA requested but not available, falling back to CPU.")
+        name = "cpu"
+    return torch.device(name)
+
+
 class SFTTrainer:
     def __init__(self, cfg: dict, model, tokenizer) -> None:
         self.cfg = cfg
@@ -30,9 +38,7 @@ class SFTTrainer:
         self.run_dir = Path(cfg.get("run_dir", f"runs/sft/{self.run_name}"))
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
-        self.device = torch.device(
-            cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")
-        )
+        self.device = _resolve_device(cfg.get("device"))
         self.dtype_name = str(cfg.get("mixed_precision", "fp16")).lower()
         self.use_amp = self.device.type == "cuda" and self.dtype_name in {
             "fp16",

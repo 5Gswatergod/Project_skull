@@ -1,20 +1,14 @@
-import argparse
-import yaml
-from skull.train.trainer_sft import TrainerSFT
+from __future__ import annotations
+
+import sys
+from pathlib import Path
 
 
-def main():
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config")
-
-    args = parser.parse_args()
-
-    cfg = yaml.safe_load(open(args.config))
-
-    trainer = TrainerSFT(cfg)
-
-    trainer.train()
+from skull.cli.sft import main  # noqa: E402
 
 
 if __name__ == "__main__":
