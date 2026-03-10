@@ -1,0 +1,21 @@
+vocab_size: 100000
+block_size: 1024
+
+n_layer: 16
+n_head: 12
+n_embd: 768
+
+dropout: 0.1
+bias: false
+
+norm: layernorm
+norm_eps: 1.0e-5
+
+pos_encoding: absolute
+rope_base: 10000.0
+
+mlp_type: gelu
+mlp_hidden_mult: 4.0
+
+tie_word_embeddings: true
+use_checkpointing: true

@@ -1,0 +1,40 @@
+run_name: skull_150m_sft
+run_dir: runs/sft/skull_150m_sft
+
+tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+model_config: configs/model/skull_150m.yaml
+base_ckpt: runs/pretrain/skull_150m_base/best.pt
+
+device: cuda
+mixed_precision: fp16
+seed: 42
+resume: true
+
+train_jsonl: data/sft/train.jsonl
+val_jsonl: data/sft/val.jsonl
+
+max_seq_len: 2048
+assistant_only_loss: true
+packing: true
+add_bos: false
+add_eos: true
+
+batch_size: 4
+grad_accum: 8
+max_steps: 10000
+eval_batches: 50
+
+optimizer: adamw
+lr: 1.0e-5
+min_lr: 1.0e-6
+lr_schedule: cosine
+warmup_steps: 200
+weight_decay: 0.1
+betas: [0.9, 0.95]
+eps: 1.0e-8
+grad_clip: 1.0
+
+num_workers: 2
+log_every: 10
+eval_every: 200
+save_every: 200

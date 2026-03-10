@@ -1,0 +1,20 @@
+tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+model_config: configs/model/skull_150m.yaml
+
+device: cuda
+seed: 42
+
+block_size: 1024
+bin_dtype: uint32
+row_tokens: 1025
+
+eval_sources:
+  - name: wiki_val
+    paths:
+      - data/bins/wiki/val_000.bin
+    weight: 1.0
+
+batch_size: 8
+num_workers: 2
+eval_nominal_size: 20000
+eval_batches: 100
