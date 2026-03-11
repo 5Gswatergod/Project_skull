@@ -24,7 +24,7 @@ def read_text_auto(file_path):
     encoding = detect_encoding(file_path)
 
     if encoding is None:
-        raise ValueError("Unknown encoding")
+        raise ValueError("未知編碼")
 
     return raw.decode(encoding, errors="ignore")
 
