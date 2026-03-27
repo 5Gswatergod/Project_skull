@@ -37,6 +37,7 @@ def main():
     parser.add_argument("--out_dir", required=True)
     parser.add_argument("--shard_tokens", type=int, default=50_000_000)
     parser.add_argument("--val_ratio", type=float, default=0.02)
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -44,6 +45,7 @@ def main():
 
     sp = spm.SentencePieceProcessor()
     sp.load(args.tokenizer)
+    rng = random.Random(args.seed)
 
     train_buffer = []
     val_buffer = []
@@ -62,7 +64,7 @@ def main():
             ids = list(sp.encode(line, out_type=int))
             ids.append(2)
 
-            if random.random() < args.val_ratio:
+            if rng.random() < args.val_ratio:
                 val_buffer.extend(ids)
                 val_idx, t, s = flush(
                     val_buffer, out_dir, "val", val_idx, args.shard_tokens
@@ -89,12 +91,15 @@ def main():
         val_shards += 1
 
     meta = {
+        "shards": train_shards + val_shards,
+        "tokens": train_tokens + val_tokens,
         "train_shards": train_shards,
         "val_shards": val_shards,
         "train_tokens": train_tokens,
         "val_tokens": val_tokens,
         "dtype": "uint32",
         "eos_id": 2,
+        "seed": args.seed,
     }
 
     with open(out_dir / "meta.json", "w") as f:
