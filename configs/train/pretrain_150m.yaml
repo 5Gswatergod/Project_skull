@@ -1,7 +1,7 @@
 run_name: skull_150m_base
-run_dir: runs/pretrain/skull_150m_base
+run_dir: runs/preskull_150m_base
 
-tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+tokenizer_model: data/tokenizer/skull_zh_en_128k_bpe.model
 model_config: configs/model/skull_150m.yaml
 
 device: cuda
@@ -14,21 +14,62 @@ bin_dtype: uint32
 row_tokens: 1025
 
 train_sources:
-  - name: wiki
+  - name: fineweb
     paths:
-      - data/bins/wiki/train_000.bin
-      - data/bins/wiki/train_001.bin
+        - data/bins/fineweb/train_000.bin
+        - data/bins/fineweb/train_001.bin
+        - data/bins/fineweb/train_002.bin
+        - data/bins/fineweb/train_003.bin
+        - data/bins/fineweb/train_004.bin
+        - data/bins/fineweb/train_005.bin
+        - data/bins/fineweb/train_006.bin
+        - data/bins/fineweb/train_007.bin
+        - data/bins/fineweb/train_008.bin
+        - data/bins/fineweb/train_009.bin
+        - data/bins/fineweb/train_010.bin
+        - data/bins/fineweb/train_011.bin
+        - data/bins/fineweb/train_012.bin
+        - data/bins/fineweb/train_013.bin
+        - data/bins/fineweb/train_014.bin
+        - data/bins/fineweb/train_016.bin
+        - data/bins/fineweb/train_017.bin
+        - data/bins/fineweb/train_018.bin
+        - data/bins/fineweb/train_019.bin
+        - data/bins/fineweb/train_020.bin
+        - data/bins/fineweb/train_021.bin
+        - data/bins/fineweb/train_022.bin
+        - data/bins/fineweb/train_023.bin
+        - data/bins/fineweb/train_024.bin
+        - data/bins/fineweb/train_025.bin
+        - data/bins/fineweb/train_026.bin
+        - data/bins/fineweb/train_027.bin
+        - data/bins/fineweb/train_028.bin
+        - data/bins/fineweb/train_029.bin
+        - data/bins/fineweb/train_030.bin
+        - data/bins/fineweb/train_031.bin
+        - data/bins/fineweb/train_032.bin
+        - data/bins/fineweb/train_033.bin
+        - data/bins/fineweb/train_034.bin
+        - data/bins/fineweb/train_035.bin
     weight: 1.0
 
-  - name: books
+  - name: novel
     paths:
-      - data/bins/books/train_000.bin
+      - data/bins/novel/train_000.bin
+      - data/bins/novel/train_001.bin
+      - data/bins/novel/train_002.bin
+      - data/bins/novel/train_003.bin
+      - data/bins/novel/train_004.bin
     weight: 2.0
 
 val_sources:
-  - name: wiki_val
+  - name: fineweb_val
     paths:
-      - data/bins/wiki/val_000.bin
+      - data/bins/fineweb/val_000.bin
+    weight: 1.0
+  - name: novel
+    paths:
+      - data/bins/novel/val_000.bin
     weight: 1.0
 
 batch_size: 8
@@ -58,3 +99,5 @@ sample_max_new_tokens: 96
 sample_prompts:
   - Explain what a tokenizer does in language model training.
   - Write a short paragraph about building multi-shard datasets.
+  - 寫一段關於訓練大型語言模型的挑戰的文字。
+  - 請解釋一下梯度裁剪的概念。

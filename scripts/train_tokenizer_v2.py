@@ -10,7 +10,7 @@ TRAIN_TXT = ROOT / "data" / "clean" / "train_clean.txt"
 OUT_DIR = ROOT / "data" / "tokenizer"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_PREFIX = OUT_DIR / "zh_trad_en_100k_bpe"
+MODEL_PREFIX = OUT_DIR / "zh_trad_en_128k_bpe"
 SAMPLE_TXT = OUT_DIR / "tokenizer_sample.txt"
 
 VOCAB_SIZE = 100_000

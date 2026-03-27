@@ -1,4 +1,5 @@
-vocab_size: 100000
+# Base config used by the 150m train/eval presets.
+vocab_size: 128000
 block_size: 1024
 
 n_layer: 16

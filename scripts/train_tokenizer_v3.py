@@ -18,15 +18,15 @@ CHINESE_TXT = ROOT / "data" / "clean" / "novel_clean.txt"
 
 # tokenizer sample 輸出
 SAMPLE_TXT = OUT_DIR / "tokenizer_mix_zh70_en30.txt"
-MODEL_PREFIX = OUT_DIR / "skull_zh_en_100k_bpe"
+MODEL_PREFIX = OUT_DIR / "skull_zh_en_128k_bpe"
 
 # vocab
 VOCAB_SIZE = 100_000
 MODEL_TYPE = "bpe"
 
 # 抽樣總量
-TOTAL_SAMPLE_LINES = 30_000_000
-INPUT_SENTENCE_SIZE = 30_000_000
+TOTAL_SAMPLE_LINES = 8_000_000
+INPUT_SENTENCE_SIZE = 8_000_000
 
 # 比例：中文 70%，英文 30% (如果你想要混合語料，調整這裡的比例)
 SOURCE_RATIOS: Dict[str, float] = {
@@ -42,7 +42,7 @@ SOURCE_PATHS: Dict[str, Path] = {
 MIN_LINE_CHARS = 5
 MAX_LINE_CHARS = 4096
 
-NUM_THREADS = 8
+NUM_THREADS = 10
 SEED = 42
 
 

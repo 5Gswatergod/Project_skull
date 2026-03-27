@@ -1,7 +1,7 @@
 run_name: skull_150m_cpt
 run_dir: runs/cpt/skull_150m_cpt
 
-tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+tokenizer_model: data/tokenizer/skull_zh_en_128k_bpe.model
 model_config: configs/model/skull_150m.yaml
 base_ckpt: runs/pretrain/skull_150m_base/best.pt
 

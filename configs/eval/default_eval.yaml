@@ -1,4 +1,4 @@
-tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+tokenizer_model: data/tokenizer/skull_zh_en_128k.model
 model_config: configs/model/skull_150m.yaml
 
 device: cuda

@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from skull.data import MultiBinDataset, causal_lm_collate_fn
+from skull.train.amp import build_grad_scaler
 from skull.train.checkpointing import (
     latest_checkpoint_path,
     load_checkpoint,
@@ -69,7 +70,7 @@ class PretrainTrainer:
         self.scheduler = build_lr_scheduler(self.optimizer, cfg)
 
         scaler_enabled = self.device.type == "cuda" and self.dtype_name == "fp16"
-        self.scaler = torch.cuda.amp.GradScaler(enabled=scaler_enabled)
+        self.scaler = build_grad_scaler(enabled=scaler_enabled)
 
         self.step = 0
         self.best_val_loss = float("inf")

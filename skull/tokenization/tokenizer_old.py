@@ -10,7 +10,7 @@ def load_tokenizer(model_path: str | Path | None = None) -> SentencePieceTokeniz
     path = (
         Path(model_path)
         if model_path
-        else Path("data/tokenizer/zh_trad_en_100k_bpe.model")
+        else Path("data/tokenizer/zh_trad_en_128k_bpe.model")
     )
     return SentencePieceTokenizer(path)
 

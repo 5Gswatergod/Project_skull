@@ -6,7 +6,7 @@ from skull.tokenization import load_tokenizer
 
 
 def test_load_tokenizer_if_model_exists():
-    model_path = Path("data/tokenizer/skull_zh_en_100k.model")
+    model_path = Path("data/tokenizer/skull_zh_en_128k.model")
     if not model_path.exists():
         pytest.skip("SentencePiece model not found")
 

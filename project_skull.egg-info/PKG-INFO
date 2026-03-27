@@ -75,8 +75,8 @@ project_skull/
 │  │  ├─ val_clean.txt
 │  │  └─ train.meta.json
 │  ├─ tokenizer/
-│  │  ├─ skull_zh_en_100k.model
-│  │  ├─ skull_zh_en_100k.vocab
+│  │  ├─ skull_zh_en_128k.model
+│  │  ├─ skull_zh_en_128k.vocab
 │  │  └─ tokenizer_sample.txt
 │  ├─ bins/
 │  │  ├─ wiki/
@@ -438,7 +438,7 @@ use_checkpointing: true
 run_name: skull_150m_base
 run_dir: runs/pretrain/skull_150m_base
 
-tokenizer_model: data/tokenizer/skull_zh_en_100k.model
+tokenizer_model: data/tokenizer/skull_zh_en_128k.model
 
 train_sources:
   - name: wiki
@@ -518,7 +518,7 @@ resume: true
   "total_train_tokens": 1823456789,
   "total_val_tokens": 4567890,
   "eos_id": 2,
-  "tokenizer_model": "data/tokenizer/skull_zh_en_100k.model"
+  "tokenizer_model": "data/tokenizer/skull_zh_en_128k.model"
 }
 ```
 

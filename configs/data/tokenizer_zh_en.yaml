@@ -2,7 +2,7 @@
 
 version: 1
 project: skull
-name: skull_zh_en_100k
+name: skull_zh_en_128k
 description: >
   SentencePiece tokenizer config for Project Skull.
   Optimized for Chinese / English mixed corpora and long-form pretraining text.
@@ -19,9 +19,9 @@ input:
 
 output:
   output_dir: data/tokenizer
-  model_prefix: skull_zh_en_100k
-  model_file: data/tokenizer/skull_zh_en_100k.model
-  vocab_file: data/tokenizer/skull_zh_en_100k.vocab
+  model_prefix: skull_zh_en_128k
+  model_file: data/tokenizer/skull_zh_en_128k.model
+  vocab_file: data/tokenizer/skull_zh_en_128k.vocab
 
 special_tokens:
   unk_id: 0
@@ -87,4 +87,4 @@ meta:
 
 logging:
   verbose: true
-  log_file: runs/tokenizer/skull_zh_en_100k.log
+  log_file: runs/tokenizer/skull_zh_en_128k.log
