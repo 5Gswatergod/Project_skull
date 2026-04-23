@@ -20,6 +20,16 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+accelerate = [
+  "accelerate>=1.0",
+]
+web = [
+  "pandas>=2.2",
+  "streamlit>=1.44",
+]
+
+[project.scripts]
+skull-web = "skull.web.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["skull*"]

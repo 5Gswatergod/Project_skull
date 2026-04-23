@@ -1,3 +1,4 @@
+import pickle
 from pathlib import Path
 
 import numpy as np
@@ -45,3 +46,26 @@ def test_block_bin_dataset_basic(tmp_path: Path):
     item1 = ds[1]
     assert torch.equal(item1["input_ids"], torch.tensor([10, 11, 12, 13]))
     assert torch.equal(item1["labels"], torch.tensor([11, 12, 13, 14]))
+
+
+def test_block_bin_dataset_pickle_roundtrip_reopens_memmap(tmp_path: Path):
+    block_size = 4
+    row_tokens = block_size + 1
+
+    rows = np.array([1, 2, 3, 4, 5], dtype=np.uint32)
+    path = tmp_path / "toy.bin"
+    rows.tofile(path)
+
+    ds = BlockBinDataset(
+        path=path,
+        block_size=block_size,
+        dtype="uint32",
+        row_tokens=row_tokens,
+    )
+
+    restored = pickle.loads(pickle.dumps(ds))
+
+    assert restored._data is None
+    item = restored[0]
+    assert torch.equal(item["input_ids"], torch.tensor([1, 2, 3, 4]))
+    assert torch.equal(item["labels"], torch.tensor([2, 3, 4, 5]))

@@ -3,7 +3,7 @@ run_dir: runs/cpt/skull_150m_cpt
 
 tokenizer_model: data/tokenizer/skull_zh_en_128k_bpe.model
 model_config: configs/model/skull_150m.yaml
-base_ckpt: runs/pretrain/skull_150m_base/best.pt
+base_ckpt: runs/preskull_150m_base
 
 device: cuda
 mixed_precision: fp16
@@ -17,19 +17,19 @@ row_tokens: 1025
 train_sources:
   - name: novels
     paths:
-      - data/bins/novels/train_000.bin
-      - data/bins/novels/train_001.bin
+      - data/bins/novel/train_000.bin
+      - data/bins/novel/train_001.bin
     weight: 2.0
 
-  - name: wiki
+  - name: fineweb
     paths:
-      - data/bins/wiki/train_000.bin
+      - data/bins/fineweb/train_000.bin
     weight: 0.5
 
 val_sources:
   - name: novels_val
     paths:
-      - data/bins/novels/val_000.bin
+      - data/bins/novel/val_000.bin
     weight: 1.0
 
 batch_size: 8

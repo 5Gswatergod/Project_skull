@@ -7,7 +7,11 @@ import pytest
 import torch
 
 from skull.train.amp import build_grad_scaler
-from skull.train.checkpointing import save_checkpoint
+from skull.train.checkpointing import (
+    latest_checkpoint_path,
+    resolve_checkpoint_path,
+    save_checkpoint,
+)
 from skull.train.trainer_pretrain import ErrorHandler, TrainingIntegrityError
 
 
@@ -76,3 +80,111 @@ def test_error_handler_refuses_to_save_non_finite_model(tmp_path):
         match="refusing to save non-finite model state",
     ):
         handler.ensure_model_is_savable()
+
+
+def test_interrupt_checkpoint_updates_latest_for_resume(tmp_path):
+    trainer = _build_fake_trainer(tmp_path)
+    trainer.step = 12
+    handler = ErrorHandler(trainer)
+
+    checkpoint_path = handler._save_error_checkpoint("interrupt")
+
+    assert checkpoint_path == tmp_path / "interrupt_step_00000012.pt"
+    assert (tmp_path / "latest.pt").exists()
+    assert latest_checkpoint_path(tmp_path) == (tmp_path / "latest.pt")
+
+
+def test_latest_checkpoint_path_falls_back_to_interrupt_checkpoint(tmp_path):
+    trainer = _build_fake_trainer(tmp_path)
+    trainer.step = 5
+    save_checkpoint(
+        tmp_path / "step_00000005.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    trainer.step = 9
+    save_checkpoint(
+        tmp_path / "interrupt_step_00000009.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    assert latest_checkpoint_path(tmp_path) == (
+        tmp_path / "interrupt_step_00000009.pt"
+    )
+
+
+def test_latest_checkpoint_path_prefers_newer_interrupt_over_stale_latest(tmp_path):
+    trainer = _build_fake_trainer(tmp_path)
+    trainer.step = 77
+    save_checkpoint(
+        tmp_path / "latest.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    trainer.step = 120
+    save_checkpoint(
+        tmp_path / "interrupt_step_00000120.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    assert latest_checkpoint_path(tmp_path) == (
+        tmp_path / "interrupt_step_00000120.pt"
+    )
+
+
+def test_latest_checkpoint_path_skips_corrupt_latest_when_interrupt_exists(tmp_path):
+    (tmp_path / "latest.pt").write_bytes(b"not a checkpoint")
+
+    trainer = _build_fake_trainer(tmp_path)
+    trainer.step = 120
+    save_checkpoint(
+        tmp_path / "interrupt_step_00000120.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    assert latest_checkpoint_path(tmp_path) == (
+        tmp_path / "interrupt_step_00000120.pt"
+    )
+
+
+def test_resolve_checkpoint_path_accepts_run_directory(tmp_path):
+    trainer = _build_fake_trainer(tmp_path)
+    trainer.step = 120
+    save_checkpoint(
+        tmp_path / "interrupt_step_00000120.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    assert resolve_checkpoint_path(tmp_path) == (
+        tmp_path / "interrupt_step_00000120.pt"
+    )

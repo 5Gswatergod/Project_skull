@@ -1,3 +1,13 @@
 /data/
 /.venv/
 /fineweb/
+/runs/
+
+# Local/generated artifacts
+/local_artifacts/
+/.skull_web/
+/.pytest_cache/
+*.egg-info/
+__pycache__/
+*.py[cod]
+/fineweb_dw.py/

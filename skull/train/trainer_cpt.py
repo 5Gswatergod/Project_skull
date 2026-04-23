@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-from skull.train.checkpointing import load_checkpoint
+from skull.train.checkpointing import load_checkpoint, resolve_checkpoint_path
 from skull.train.trainer_pretrain import PretrainTrainer
 
 
@@ -14,9 +12,9 @@ class CPTTrainer(PretrainTrainer):
 
         base_ckpt = cfg.get("base_ckpt")
         if base_ckpt:
-            ckpt_path = Path(base_ckpt)
-            if not ckpt_path.exists():
-                raise FileNotFoundError(f"base_ckpt does not exist: {ckpt_path}")
+            ckpt_path = resolve_checkpoint_path(base_ckpt)
+            if ckpt_path is None:
+                raise FileNotFoundError(f"base_ckpt does not exist: {base_ckpt}")
             load_checkpoint(
                 ckpt_path,
                 model=model,

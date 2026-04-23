@@ -1,82 +1,53 @@
 # Project Skull
 
-Project Skull is a modular LLM training framework focused on Chinese and mixed Chinese-English corpora. It brings data cleaning, tokenizer training, bin shard building, base pretraining, continued pretraining, SFT, evaluation, and sampling into a single repo, with the entire workflow driven by YAML configs.
+Project Skull is a modular LLM training framework for Chinese and mixed Chinese-English corpora. It provides a config-driven workflow for preparing text, training tokenizers, building binary shards, pretraining GPT-style models, continuing pretraining, supervised fine-tuning, evaluation, sampling, and monitoring runs through a Streamlit web app.
 
-This project is currently well suited for single-machine experiments, data pipeline validation, and organizing training workflows for small to medium-sized models. The overall design emphasizes replaceability, observability, and resumability rather than heavy abstraction.
+The project is designed for single-machine experiments, data pipeline validation, and small-to-medium model training workflows. It favors readable modules, explicit YAML configs, recoverable runs, and easy inspection over heavy framework abstraction.
 
-## Design Goals
+## Features
 
-- `streaming first`: prefer streaming for large-scale data processing
-- `config-driven`: all training entry points are controlled by YAML
-- `multi-bin ready`: supports multiple sources and multiple shards out of the box
-- `resume-safe`: training can automatically find the latest checkpoint and resume
-- `modular`: tokenizer, dataset, trainer, and model can be swapped independently
+- Config-driven training with YAML files under `configs/`
+- Decoder-only GPT model with configurable model size and architecture options
+- SentencePiece tokenizer integration
+- Streaming-oriented text cleaning and tokenizer preparation scripts
+- Single-source and multi-source binary dataset support
+- Base pretraining, continued pretraining, and supervised fine-tuning trainers
+- Evaluation and sampling CLIs
+- Streamlit control panel for launching jobs and monitoring runs
+- Pytest coverage for datasets, training utilities, model forward pass, web jobs, and fallback behavior
 
-## Currently Implemented
+## Status
 
-- SentencePiece tokenizer wrapper
-- Decoder-only GPT model and YAML model config
-- `BlockBinDataset`, `MultiBinDataset`, `PackedSFTDataset`
-- `PretrainTrainer`, `CPTTrainer`, `SFTTrainer`
-- CLIs:
-  - `python -m skull.cli.pretrain`
-  - `python -m skull.cli.cpt`
-  - `python -m skull.cli.sft`
-  - `python -m skull.cli.eval`
-  - `python -m skull.cli.sample`
-- Common data scripts:
-  - `scripts/build_clean_corpus.py`
-  - `scripts/append_datasets.py`
-  - `scripts/train_tokenizer_v4.py`
-  - `scripts/build_bins_multishard.py`
-  - `scripts/count_tokens.py`
-- Basic tests:
-  - bin dataset
-  - multi-bin dataset
-  - SFT dataset
-  - model forward
-  - CUDA fallback
+Project Skull can run the full local workflow:
 
-## Project Status
+1. Prepare or clean plain text corpora.
+2. Train or load a SentencePiece tokenizer.
+3. Build `.bin` training and validation shards.
+4. Run base pretraining.
+5. Run continued pretraining or SFT.
+6. Evaluate checkpoints and generate samples.
+7. Inspect jobs, logs, checkpoints, metrics, and samples in the web app.
 
-This repo can already run through a complete end-to-end workflow:
+The repository is still experiment-oriented. Before launching real training, verify every path in the selected config file.
 
-1. Prepare or clean plain text
-2. Train a SentencePiece tokenizer
-3. Build `.bin` shards
-4. Run pretraining
-5. Run CPT or SFT
-6. Run evaluation and sampling
+## Requirements
 
-There are also a few things to keep in mind:
+- Python 3.10+
+- PyTorch 2.2+
+- NumPy
+- PyYAML
+- SentencePiece
+- Transformers
 
-- The YAML files in `configs/` are closer to example templates, so verify all file paths before running anything for real.
-- `scripts/train_tokenizer_v4.py` is currently the most complete tokenizer script. `v1` through `v3` can be treated as historical versions.
-- The main training path is currently centered on single-machine, single-process workflows. Multi-GPU / distributed support is not yet a polished public interface.
-- `device: cuda` falls back to CPU when CUDA is unavailable, but actual training will be very slow.
+Optional extras:
 
-## Project Structure
-
-```text
-project_skull/
-├─ configs/            # data / model / train / eval configs
-├─ data/               # clean text, tokenizer, bins, manifests
-├─ runs/               # checkpoints, metrics, samples
-├─ scripts/            # data and training helper scripts
-├─ skull/
-│  ├─ cli/             # pretrain / cpt / sft / eval / sample entry points
-│  ├─ data/            # datasets and collators
-│  ├─ eval/            # perplexity / generation
-│  ├─ model/           # GPT config and model components
-│  ├─ tokenization/    # tokenizer wrapper
-│  ├─ train/           # trainers / optimizer / scheduler / checkpointing
-│  └─ utils/
-└─ tests/
-```
+- `dev`: pytest
+- `accelerate`: Hugging Face Accelerate
+- `web`: Streamlit and pandas
 
 ## Installation
 
-### Use a Virtual Environment
+Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
@@ -94,64 +65,39 @@ Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 ```
 
-### Install Dependencies
-
-If you want an editable install:
+Install the project in editable mode:
 
 ```bash
-pip install -e .[dev]
+pip install -e .[dev,web]
 ```
 
-If you just want to install the dependencies quickly:
+Install Accelerate support if needed:
+
+```bash
+pip install -e .[accelerate]
+```
+
+Alternatively, install the pinned basic requirements:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Run Tests
+## Quick Start
+
+Run the test suite first:
 
 ```bash
 pytest
 ```
 
-## Quick Start
-
-If you already have:
-
-- a tokenizer model
-- a model config
-- train / val `.bin` shards
-
-then you can start directly from pretraining.
-
-### Check These 4 Fields Before Running
-
-- `tokenizer_model`
-- `model_config`
-- `train_sources` / `val_sources`
-- `run_dir`
-
-Important notes:
-
-- `scripts/train_tokenizer_v4.py` usually outputs a filename like `skull_zh_en_128k_bpe.model`
-- If your config still points to `data/tokenizer/skull_zh_en_128k.model`, change it to the filename that actually exists
-- Your shard list also needs to match the real outputs such as `train_000.bin`, `train_001.bin`, and so on
-
-### 1. Base Pretraining
+Start pretraining from a config:
 
 ```bash
 python -m skull.cli.pretrain --config configs/train/pretrain_150m.yaml
 ```
 
-### 2. Eval
-
-```bash
-python -m skull.cli.eval \
-  --config configs/eval/default_eval.yaml \
-  --ckpt runs/pretrain/skull_150m_base/best.pt
-```
-
-If you want JSON output:
+Evaluate a checkpoint:
 
 ```bash
 python -m skull.cli.eval \
@@ -160,7 +106,7 @@ python -m skull.cli.eval \
   --print_json
 ```
 
-### 3. Sample
+Generate a sample:
 
 ```bash
 python -m skull.cli.sample \
@@ -170,15 +116,41 @@ python -m skull.cli.sample \
   --max_new_tokens 128
 ```
 
-Note that the `sample` CLI requires both `--config` and `--ckpt`.
+Use Accelerate:
 
-## From Raw Text to Training
+```bash
+accelerate launch --num_processes 2 -m skull.cli.pretrain \
+  --config configs/train/pretrain_150m.yaml \
+  --accelerate
+```
 
-If you want to rebuild the entire pipeline from raw corpora, follow the order below.
+## Web App
 
-### 1. Clean a Single Text File
+Project Skull includes a Streamlit app for a simpler local workflow:
 
-`scripts/build_clean_corpus.py` is the simplest cleaning script and is suitable for turning a single text file into clean plain text:
+- See pipeline readiness at a glance
+- Launch train, eval, sample, and test jobs
+- Monitor active jobs and logs
+- Inspect run metrics, checkpoints, errors, and samples
+- Browse configs, data assets, and scripts
+- Switch between auto, light, and dark appearance modes
+
+Install the web extra and launch:
+
+```bash
+pip install -e .[web]
+python -m skull.web
+```
+
+After installation, you can also run:
+
+```bash
+skull-web
+```
+
+## Data Pipeline
+
+### 1. Clean Text
 
 ```bash
 python scripts/build_clean_corpus.py \
@@ -186,16 +158,9 @@ python scripts/build_clean_corpus.py \
   --output data/clean/wiki.txt
 ```
 
-It currently mainly does the following:
+The cleaner removes URLs, strips basic HTML tags, normalizes whitespace, and filters very short lines.
 
-- remove URLs
-- remove HTML tags
-- basic whitespace cleanup
-- filter out overly short lines
-
-### 2. Merge Multiple Clean Text Files
-
-If you already have multiple clean text files, you can merge them with `scripts/append_datasets.py`:
+### 2. Merge Clean Files
 
 ```bash
 python scripts/append_datasets.py \
@@ -204,17 +169,9 @@ python scripts/append_datasets.py \
   --meta data/clean/train.meta.json
 ```
 
-### 3. Train the Tokenizer
+### 3. Train A Tokenizer
 
-It is recommended to use `scripts/train_tokenizer_v4.py`. It supports:
-
-- multi-source sampling
-- ratio / weight control
-- basic quality filtering
-- exact dedup
-- manifest output
-
-Example:
+Use `scripts/train_tokenizer_v4.py` for the most complete tokenizer workflow:
 
 ```bash
 python scripts/train_tokenizer_v4.py \
@@ -231,12 +188,6 @@ Common outputs:
 - `data/tokenizer/<model-prefix>.vocab`
 - `data/tokenizer/tokenizer_manifest_128k.json`
 
-If you only want to generate the sample file first and not train SentencePiece immediately:
-
-```bash
-python scripts/train_tokenizer_v4.py --skip-train ...
-```
-
 ### 4. Count Tokens
 
 ```bash
@@ -245,9 +196,7 @@ python scripts/count_tokens.py \
   --tokenizer data/tokenizer/skull_zh_en_128k_bpe.model
 ```
 
-### 5. Build Multi-Shard Bins
-
-It is recommended to build bins separately for each source, which makes later weighted mixing much easier.
+### 5. Build Binary Shards
 
 ```bash
 python scripts/build_bins_multishard.py \
@@ -258,129 +207,78 @@ python scripts/build_bins_multishard.py \
   --val_ratio 0.02
 ```
 
-The output will look roughly like this:
+Expected output:
 
 ```text
 data/bins/fineweb/
 ├─ train_000.bin
 ├─ train_001.bin
-├─ ...
 ├─ val_000.bin
 └─ meta.json
 ```
 
-If you only need the simplest single-file output, you can also use `scripts/build_bins.py`.
+For a simple single-file bin, use `scripts/build_bins.py`.
 
-### 6. Run Base Pretraining
+## Training Workflows
 
-The core fields in `configs/train/pretrain_150m.yaml` usually include:
-
-- `run_name`
-- `run_dir`
-- `tokenizer_model`
-- `model_config`
-- `device`
-- `mixed_precision`
-- `block_size`
-- `bin_dtype`
-- `row_tokens`
-- `train_sources`
-- `val_sources`
-- `batch_size`
-- `grad_accum`
-- `max_steps`
-- `lr` / `min_lr` / `warmup_steps`
-- `log_every` / `eval_every` / `save_every` / `sample_every`
-
-The format of `train_sources` / `val_sources`:
-
-```yaml
-train_sources:
-  - name: fineweb
-    paths:
-      - data/bins/fineweb/train_000.bin
-      - data/bins/fineweb/train_001.bin
-    weight: 1.0
-
-  - name: novel
-    paths:
-      - data/bins/novel/train_000.bin
-      - data/bins/novel/train_001.bin
-    weight: 2.0
-```
-
-Training command:
+### Base Pretraining
 
 ```bash
 python -m skull.cli.pretrain --config configs/train/pretrain_150m.yaml
 ```
 
-### 7. Run Continued Pretraining
-
-The main differences between CPT and base pretraining are:
-
-- it loads `base_ckpt` first
-- it usually uses a smaller learning rate
-- source mixing is more biased toward the target domain
-
-Command:
+### Continued Pretraining
 
 ```bash
 python -m skull.cli.cpt --config configs/train/cpt_150m.yaml
 ```
 
-### 8. Prepare SFT Data
+CPT loads `base_ckpt`, usually uses a smaller learning rate, and typically emphasizes a target-domain data mix.
 
-SFT JSONL supports two formats.
-
-#### Format A: `messages`
-
-```json
-{"messages":[
-  {"role":"system","content":"You are a helpful assistant."},
-  {"role":"user","content":"Please introduce Taipei."},
-  {"role":"assistant","content":"Taipei is the capital of Taiwan..."}
-]}
-```
-
-#### Format B: `prompt` / `response`
-
-```json
-{"prompt":"Please introduce Taipei.","response":"Taipei is the capital of Taiwan..."}
-```
-
-`PackedSFTDataset` currently supports:
-
-- `assistant_only_loss`
-- packing
-- padding / truncation
-- `system` / `tool` / other role markers
-
-When `assistant_only_loss: true`, only assistant tokens contribute to the loss by default.
-
-### 9. Run SFT
+### Supervised Fine-Tuning
 
 ```bash
 python -m skull.cli.sft --config configs/train/sft_150m.yaml
 ```
 
-## Config Cheat Sheet
+SFT JSONL supports either chat-style `messages` records:
 
-### Train Config
+```json
+{"messages":[{"role":"user","content":"Please introduce Taipei."},{"role":"assistant","content":"Taipei is the capital of Taiwan..."}]}
+```
 
-- `tokenizer_model`: path to the SentencePiece `.model`
-- `model_config`: model YAML, or embed `model` directly inside the train config
-- `device`: usually `cuda` or `cpu`
-- `mixed_precision`: `fp16` or `bf16`
-- `resume`: whether to automatically resume from `run_dir/latest.pt`
-- `block_size`: model context length
-- `row_tokens`: usually equal to `block_size + 1`
-- `bin_dtype`: currently defaults to `uint32`
-- `train_nominal_size` / `val_nominal_size`: nominal dataset lengths
+Or simple `prompt` / `response` records:
 
-### Model Config
+```json
+{"prompt":"Please introduce Taipei.","response":"Taipei is the capital of Taiwan..."}
+```
 
-Common fields currently supported by `GPTConfig`:
+`PackedSFTDataset` supports packing, padding, truncation, role markers, and assistant-only loss.
+
+## Configuration
+
+Check these fields before running any training config:
+
+- `tokenizer_model`
+- `model_config`
+- `train_sources` / `val_sources`
+- `run_dir`
+
+Common train config fields:
+
+- `device`
+- `mixed_precision`
+- `resume`
+- `block_size`
+- `row_tokens`
+- `bin_dtype`
+- `batch_size`
+- `grad_accum`
+- `max_steps`
+- `lr`, `min_lr`, `warmup_steps`
+- `log_every`, `eval_every`, `save_every`, `sample_every`
+
+Common model config fields:
 
 - `vocab_size`
 - `block_size`
@@ -388,94 +286,72 @@ Common fields currently supported by `GPTConfig`:
 - `n_head`
 - `n_embd`
 - `dropout`
-- `bias`
-- `norm`: `layernorm` or `rmsnorm`
-- `pos_encoding`: `absolute` or `rope`
-- `rope_base`
-- `mlp_type`: `gelu` or `swiglu`
-- `mlp_hidden_mult`
+- `norm`
+- `pos_encoding`
+- `mlp_type`
 - `tie_word_embeddings`
 - `use_checkpointing`
 
-## Data Format Notes
-
-### Pretraining Bin
-
-- dtype: `uint32`
-- reading pattern: fixed windows sliced into rows
-- row length: `block_size + 1`
-- the dataset outputs:
-  - `input_ids = row[:-1]`
-  - `labels = row[1:]`
-
-### Multi-Source Sampling
-
-`MultiBinDataset` will:
-
-- sample a source according to source `weight`
-- sample a shard according to shard length ratio
-- sample a row within that shard
-
-This lets you mix data sources with a simple YAML config, without first merging everything into one giant bin.
-
-## Outputs
-
-For pretraining, `run_dir` usually looks like this:
+## Project Layout
 
 ```text
-runs/pretrain/<run_name>/
-├─ latest.pt
-├─ best.pt
-├─ step_00000200.pt
-├─ step_00000400.pt
-├─ metrics.jsonl
-└─ samples/
-   ├─ step_00000500_0.txt
-   └─ step_00000500_1.txt
+Project_skull/
+├─ configs/             # data, model, train, and eval configs
+├─ data/                # local corpora, tokenizers, bins, and manifests
+├─ runs/                # local checkpoints, metrics, errors, and samples
+├─ scripts/             # data and training helper scripts
+├─ skull/
+│  ├─ cli/              # pretrain, cpt, sft, eval, sample entry points
+│  ├─ data/             # datasets, manifests, collators
+│  ├─ eval/             # evaluation and generation helpers
+│  ├─ model/            # GPT model components
+│  ├─ tokenization/     # tokenizer wrappers
+│  ├─ train/            # trainers, optimizer, scheduler, checkpointing
+│  ├─ utils/            # shared utilities
+│  └─ web/              # Streamlit app and web job runner
+├─ tests/               # pytest suite
+├─ pyproject.toml
+└─ requirements.txt
 ```
 
-Notes:
+`data/`, `runs/`, `.skull_web/`, caches, and build metadata are local artifacts and should not be treated as source code.
 
-- `latest.pt`: the most recent save
-- `best.pt`: the checkpoint with the best validation loss
-- `step_*.pt`: periodic snapshots
-- `metrics.jsonl`: train / val metrics
-- `samples/`: generations from fixed prompts
+## Development
 
-If `val_sources` are not provided, `best.pt` may not be produced.
-
-## Common Commands
+Run all tests:
 
 ```bash
-python -m skull.cli.pretrain --config configs/train/pretrain_150m.yaml
-python -m skull.cli.cpt --config configs/train/cpt_150m.yaml
-python -m skull.cli.sft --config configs/train/sft_150m.yaml
-python -m skull.cli.eval --config configs/eval/default_eval.yaml --ckpt runs/pretrain/skull_150m_base/best.pt
-python -m skull.cli.sample --config configs/train/pretrain_150m.yaml --ckpt runs/pretrain/skull_150m_base/best.pt --prompt "Hello"
+pytest
 ```
 
-If you prefer launching from `scripts/`, you can also use:
+Run only web-related tests:
+
+```bash
+pytest tests/test_web_dashboard_data.py tests/test_web_jobs.py
+```
+
+Useful launch wrappers:
 
 - `scripts/launch_pretrain.py`
 - `scripts/launch_cpt.py`
 - `scripts/launch_sft.py`
 
-These are essentially thin wrappers around the corresponding CLIs.
+These are thin wrappers around the module CLIs.
 
-## Known Notes
+## Troubleshooting
 
-- Always verify that the paths in the config actually exist before running
-- The `eval` config must include `eval_sources`
-- The `sample` CLI must include `--config`
-- A mismatch between the tokenizer filename and the config is one of the most common startup errors
-- `scripts/export_checkpoint.py` is currently a simplified utility, so confirm it matches your model architecture before using it
+- Config paths are templates. Verify they point to files that exist locally.
+- Tokenizer filename mismatches are a common startup error.
+- `sample` requires both `--config` and `--ckpt`.
+- `eval` configs must include `eval_sources`.
+- `device: cuda` falls back to CPU if CUDA is unavailable, but training will be slow.
+- If no validation sources are configured, `best.pt` may not be produced.
 
-## Recommended Next Steps
+## Recommended First Run
 
-If this is your first time picking up this project, the recommended order is:
-
-1. Run `pytest`
-2. Open `configs/train/pretrain_150m.yaml` and verify all file paths
-3. Use a small dataset to run through tokenizer -> bins -> pretrain
-4. Confirm that `runs/` produces checkpoints, metrics, and samples correctly
-5. Then scale up the data size and training steps
+1. Run `pytest`.
+2. Open `configs/train/pretrain_150m.yaml`.
+3. Verify `tokenizer_model`, `model_config`, data shard paths, and `run_dir`.
+4. Use a small corpus to run tokenizer -> bins -> pretraining.
+5. Confirm that `runs/` contains checkpoints, metrics, and samples.
+6. Increase data size and training steps after the small run is healthy.

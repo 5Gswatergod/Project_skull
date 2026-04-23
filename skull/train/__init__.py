@@ -15,6 +15,7 @@ from .checkpointing import (
     save_checkpoint,
     load_checkpoint,
     latest_checkpoint_path,
+    resolve_checkpoint_path,
 )
 from .trainer_pretrain import PretrainTrainer
 from .trainer_cpt import CPTTrainer
@@ -31,6 +32,7 @@ __all__ = [
     "save_checkpoint",
     "load_checkpoint",
     "latest_checkpoint_path",
+    "resolve_checkpoint_path",
     "PretrainTrainer",
     "CPTTrainer",
     "SFTTrainer",
