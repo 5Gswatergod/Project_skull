@@ -22,6 +22,7 @@ from skull.train.accelerate_support import build_accelerator
 from skull.train.losses import compute_causal_lm_loss, masked_token_accuracy
 from skull.train.optimizer import build_optimizer
 from skull.train.schedulers import build_lr_scheduler
+from skull.train.stop import StopRequested
 
 
 def _resolve_device(requested: str | None) -> torch.device:
@@ -206,17 +207,8 @@ class ErrorHandler:
             best_val_loss=self.trainer.best_val_loss,
             extra_state={"run_name": self.trainer.run_name, "save_tag": save_tag},
         )
-        if save_tag == "interrupt":
-            save_checkpoint(
-                self.trainer.run_dir / "latest.pt",
-                model=self._model(),
-                optimizer=self.trainer.optimizer,
-                scheduler=self.trainer.scheduler,
-                scaler=self.trainer.scaler,
-                step=self.trainer.step,
-                best_val_loss=self.trainer.best_val_loss,
-                extra_state={"run_name": self.trainer.run_name, "save_tag": save_tag},
-            )
+        # latest_checkpoint_path also scans interrupt checkpoints, so requested stops
+        # do not need a second full write to latest.pt.
         return path
 
     def _record_error(
@@ -377,9 +369,7 @@ class PretrainTrainer:
         if self.stop_request_path is None:
             return
         if self.stop_request_path.exists():
-            raise KeyboardInterrupt(
-                f"Stop requested via {self.stop_request_path}"
-            )
+            raise StopRequested(self.stop_request_path)
 
     def _build_train_loader(self) -> DataLoader:
         ds = MultiBinDataset(

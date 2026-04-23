@@ -17,8 +17,16 @@ from skull.web.jobs import (
     update_job,
 )
 
-GRACEFUL_STOP_TIMEOUT_SEC = 30.0
-TERMINATE_TIMEOUT_SEC = 6.0
+
+def _float_env(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+GRACEFUL_STOP_TIMEOUT_SEC = _float_env("SKULL_GRACEFUL_STOP_TIMEOUT_SEC", 180.0)
+TERMINATE_TIMEOUT_SEC = _float_env("SKULL_TERMINATE_TIMEOUT_SEC", 6.0)
 
 
 def _terminate_process(pid: int) -> None:

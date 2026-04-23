@@ -20,6 +20,7 @@ from .checkpointing import (
 from .trainer_pretrain import PretrainTrainer
 from .trainer_cpt import CPTTrainer
 from .trainer_sft import SFTTrainer
+from .stop import StopRequested
 
 __all__ = [
     "IGNORE_INDEX",
@@ -36,4 +37,5 @@ __all__ = [
     "PretrainTrainer",
     "CPTTrainer",
     "SFTTrainer",
+    "StopRequested",
 ]

@@ -23,6 +23,7 @@ from skull.train.accelerate_support import build_accelerator
 from skull.train.losses import compute_causal_lm_loss, masked_token_accuracy
 from skull.train.optimizer import build_optimizer
 from skull.train.schedulers import build_lr_scheduler
+from skull.train.stop import StopRequested
 
 
 def _resolve_device(requested: str | None) -> torch.device:
@@ -171,9 +172,7 @@ class SFTTrainer:
         if self.stop_request_path is None:
             return
         if self.stop_request_path.exists():
-            raise KeyboardInterrupt(
-                f"Stop requested via {self.stop_request_path}"
-            )
+            raise StopRequested(self.stop_request_path)
 
     def _build_train_loader(self) -> DataLoader:
         ds = PackedSFTDataset(
@@ -364,6 +363,22 @@ class SFTTrainer:
                 extra_state={"run_name": self.run_name},
             )
 
+    def _save_interrupt(self) -> None:
+        if not self.is_main_process:
+            return
+
+        model = self.unwrapped_model()
+        save_checkpoint(
+            self.run_dir / f"interrupt_step_{self.step:08d}.pt",
+            model=model,
+            optimizer=self.optimizer,
+            scheduler=self.scheduler,
+            scaler=self.scaler,
+            step=self.step,
+            best_val_loss=self.best_val_loss,
+            extra_state={"run_name": self.run_name, "save_tag": "interrupt"},
+        )
+
     def train(self) -> None:
         self.model.train()
         loader_iter = iter(self.train_loader)
@@ -483,6 +498,11 @@ class SFTTrainer:
                     self._save(is_best=False)
 
             self._save(is_best=False)
+        except StopRequested:
+            self.optimizer.zero_grad(set_to_none=True)
+            self.model.train()
+            self._save_interrupt()
+            raise
         except KeyboardInterrupt:
             self.optimizer.zero_grad(set_to_none=True)
             self.model.train()

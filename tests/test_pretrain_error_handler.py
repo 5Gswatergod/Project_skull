@@ -82,7 +82,40 @@ def test_error_handler_refuses_to_save_non_finite_model(tmp_path):
         handler.ensure_model_is_savable()
 
 
-def test_interrupt_checkpoint_updates_latest_for_resume(tmp_path):
+def test_save_checkpoint_retries_transient_replace_permission_error(
+    tmp_path,
+    monkeypatch,
+):
+    trainer = _build_fake_trainer(tmp_path)
+    path_type = type(tmp_path / "latest.pt")
+    original_replace = path_type.replace
+    replace_calls = 0
+
+    def flaky_replace(self, target):
+        nonlocal replace_calls
+        if self.name.startswith(".latest.pt"):
+            replace_calls += 1
+            if replace_calls == 1:
+                raise PermissionError("locked")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(path_type, "replace", flaky_replace)
+
+    save_checkpoint(
+        tmp_path / "latest.pt",
+        model=trainer.model,
+        optimizer=trainer.optimizer,
+        scheduler=trainer.scheduler,
+        scaler=trainer.scaler,
+        step=trainer.step,
+        best_val_loss=trainer.best_val_loss,
+    )
+
+    assert replace_calls == 2
+    assert latest_checkpoint_path(tmp_path) == tmp_path / "latest.pt"
+
+
+def test_interrupt_checkpoint_is_discoverable_for_resume(tmp_path):
     trainer = _build_fake_trainer(tmp_path)
     trainer.step = 12
     handler = ErrorHandler(trainer)
@@ -90,8 +123,8 @@ def test_interrupt_checkpoint_updates_latest_for_resume(tmp_path):
     checkpoint_path = handler._save_error_checkpoint("interrupt")
 
     assert checkpoint_path == tmp_path / "interrupt_step_00000012.pt"
-    assert (tmp_path / "latest.pt").exists()
-    assert latest_checkpoint_path(tmp_path) == (tmp_path / "latest.pt")
+    assert not (tmp_path / "latest.pt").exists()
+    assert latest_checkpoint_path(tmp_path) == checkpoint_path
 
 
 def test_latest_checkpoint_path_falls_back_to_interrupt_checkpoint(tmp_path):

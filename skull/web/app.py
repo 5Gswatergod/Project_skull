@@ -29,6 +29,8 @@ DEFAULT_REPO_ROOT = Path(
 ).resolve()
 
 PAGES = ["Home", "Run", "Monitor", "Assets", "Help"]
+PAGE_STATE_KEY = "page"
+PENDING_PAGE_STATE_KEY = "_pending_page"
 
 
 @st.cache_data(show_spinner=False, ttl=2)
@@ -223,7 +225,17 @@ def _active_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _set_page(page: str) -> None:
-    st.session_state["page"] = page
+    if page in PAGES:
+        st.session_state[PENDING_PAGE_STATE_KEY] = page
+
+
+def _sync_pending_page() -> None:
+    if PAGE_STATE_KEY not in st.session_state:
+        st.session_state[PAGE_STATE_KEY] = "Home"
+
+    pending_page = st.session_state.pop(PENDING_PAGE_STATE_KEY, None)
+    if pending_page in PAGES:
+        st.session_state[PAGE_STATE_KEY] = pending_page
 
 
 def _set_notice(kind: str, message: str) -> None:
@@ -564,14 +576,13 @@ def _render_sidebar(
     jobs: list[dict[str, Any]],
 ) -> str:
     with st.sidebar:
-        if "page" not in st.session_state:
-            st.session_state["page"] = "Home"
+        _sync_pending_page()
 
         page = st.radio(
             "Primary task",
             PAGES,
-            index=_safe_index(PAGES, st.session_state.get("page")),
-            key="page",
+            index=_safe_index(PAGES, st.session_state.get(PAGE_STATE_KEY)),
+            key=PAGE_STATE_KEY,
             captions=[
                 "Status",
                 "Launch",

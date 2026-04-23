@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any, Optional
 
@@ -9,6 +10,8 @@ import torch
 
 
 _STEP_CHECKPOINT_RE = re.compile(r"^(?:interrupt_)?step_(\d+)\.pt$")
+_REPLACE_RETRIES = 5
+_REPLACE_RETRY_DELAY_SEC = 0.25
 
 
 def _checkpoint_step(path: Path) -> Optional[int]:
@@ -103,9 +106,20 @@ def save_checkpoint(
             torch.save(state, f)
             f.flush()
             os.fsync(f.fileno())
-        tmp_path.replace(path)
+        _replace_checkpoint(tmp_path, path)
     finally:
         tmp_path.unlink(missing_ok=True)
+
+
+def _replace_checkpoint(tmp_path: Path, path: Path) -> None:
+    for attempt in range(_REPLACE_RETRIES):
+        try:
+            tmp_path.replace(path)
+            return
+        except PermissionError:
+            if attempt == _REPLACE_RETRIES - 1:
+                raise
+            time.sleep(_REPLACE_RETRY_DELAY_SEC)
 
 
 def load_checkpoint(

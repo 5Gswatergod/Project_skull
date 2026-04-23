@@ -10,6 +10,7 @@ from skull.cli.utils import (
 )
 from skull.train.accelerate_support import is_primary_process_from_env
 from skull.train import CPTTrainer
+from skull.train.stop import StopRequested
 
 
 def parse_args():
@@ -40,8 +41,13 @@ def main():
         model=model,
         tokenizer=tokenizer,
     )
-    trainer.train()
+    try:
+        trainer.train()
+    except StopRequested as exc:
+        print(f"[train] {exc}; exiting cleanly.")
+        return 0
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
