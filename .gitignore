@@ -186,6 +186,8 @@ pyrightconfig.json
 /local_artifacts/
 /.skull_web/
 /.pytest_cache/
+/frontend/node_modules/
+/frontend/.vite/
 *.egg-info/
 __pycache__/
 *.py[cod]

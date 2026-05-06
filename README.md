@@ -1,6 +1,6 @@
 # Project Skull
 
-Project Skull 是一個面向中文與中英混合語料的模組化 LLM 訓練框架。它把文字清洗、tokenizer 訓練、binary shard 建置、base pretraining、continued pretraining、SFT、evaluation、sampling，以及 Streamlit Web 監控介面整理在同一個 repo 裡，並用 YAML config 驅動主要流程。
+Project Skull 是一個面向中文與中英混合語料的模組化 LLM 訓練框架。它把文字清洗、tokenizer 訓練、binary shard 建置、base pretraining、continued pretraining、SFT、evaluation、sampling，以及 React Web 監控介面整理在同一個 repo 裡，並用 YAML config 驅動主要流程。
 
 這個專案適合單機實驗、資料管線驗證，以及小到中型模型訓練流程整理。設計上偏向模組清楚、設定明確、可恢復、可觀測，而不是把所有細節藏在高度封裝後面。
 
@@ -13,7 +13,7 @@ Project Skull 是一個面向中文與中英混合語料的模組化 LLM 訓練�
 - 支援單來源與多來源 binary dataset
 - 支援 base pretraining、continued pretraining、supervised fine-tuning
 - 提供 evaluation 與 sampling CLI
-- 提供 Streamlit control panel，可啟動 job、監控 log 與檢視 run artifacts
+- 提供 React control panel，可啟動 job、監控 log 與檢視 run artifacts
 - 使用 pytest 覆蓋 dataset、training utilities、model forward、web jobs 與 fallback 行為
 
 ## 專案狀態
@@ -43,7 +43,7 @@ Project Skull 目前可以走完完整本地流程：
 
 - `dev`：pytest
 - `accelerate`：Hugging Face Accelerate
-- `web`：Streamlit 與 pandas
+- `web`：FastAPI、Uvicorn、HTTP client 與 legacy web dependencies
 
 ## 安裝
 
@@ -126,14 +126,14 @@ accelerate launch --num_processes 2 -m skull.cli.pretrain \
 
 ## Web App
 
-Project Skull 內建 Streamlit app，提供更簡單的本地操作流程：
+Project Skull 內建以 React、Tailwind CSS、GSAP 與 FastAPI 驅動的本地 control panel：
 
 - 快速檢查 pipeline readiness
 - 啟動 train、eval、sample 與 test jobs
 - 監控 active jobs 與 logs
 - 檢視 run metrics、checkpoints、errors 與 samples
 - 瀏覽 configs、data assets 與 scripts
-- 支援 auto、light、dark appearance modes
+- 提供更具層次感的 dashboard、launch studio、ops console 與 assets 視圖
 
 安裝 web extra 並啟動：
 
@@ -146,6 +146,14 @@ python -m skull.web
 
 ```bash
 skull-web
+```
+
+如果要修改前端原始碼，請在 `frontend/` 內使用 Vite：
+
+```bash
+npm install --prefix frontend
+npm run dev --prefix frontend
+npm run build --prefix frontend
 ```
 
 ## 資料管線
@@ -308,7 +316,8 @@ Project_skull/
 │  ├─ tokenization/     # tokenizer wrappers
 │  ├─ train/            # trainers、optimizer、scheduler、checkpointing
 │  ├─ utils/            # shared utilities
-│  └─ web/              # Streamlit app 與 web job runner
+│  └─ web/              # FastAPI server、legacy app、web job runner
+├─ frontend/            # React + Tailwind CSS + GSAP source
 ├─ tests/               # pytest suite
 ├─ pyproject.toml
 └─ requirements.txt

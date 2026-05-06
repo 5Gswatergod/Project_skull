@@ -24,8 +24,11 @@ accelerate = [
   "accelerate>=1.0",
 ]
 web = [
+  "fastapi>=0.111",
+  "httpx>=0.28",
   "pandas>=2.2",
   "streamlit>=1.44",
+  "uvicorn>=0.30",
 ]
 
 [project.scripts]
@@ -33,6 +36,9 @@ skull-web = "skull.web.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["skull*"]
+
+[tool.setuptools.package-data]
+"skull.web" = ["static/index.html", "static/assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

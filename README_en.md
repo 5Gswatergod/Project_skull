@@ -1,6 +1,6 @@
 # Project Skull
 
-Project Skull is a modular LLM training framework for Chinese and mixed Chinese-English corpora. It provides a config-driven workflow for preparing text, training tokenizers, building binary shards, pretraining GPT-style models, continuing pretraining, supervised fine-tuning, evaluation, sampling, and monitoring runs through a Streamlit web app.
+Project Skull is a modular LLM training framework for Chinese and mixed Chinese-English corpora. It provides a config-driven workflow for preparing text, training tokenizers, building binary shards, pretraining GPT-style models, continuing pretraining, supervised fine-tuning, evaluation, sampling, and monitoring runs through a React web app.
 
 The project is designed for single-machine experiments, data pipeline validation, and small-to-medium model training workflows. It favors readable modules, explicit YAML configs, recoverable runs, and easy inspection over heavy framework abstraction.
 
@@ -13,7 +13,7 @@ The project is designed for single-machine experiments, data pipeline validation
 - Single-source and multi-source binary dataset support
 - Base pretraining, continued pretraining, and supervised fine-tuning trainers
 - Evaluation and sampling CLIs
-- Streamlit control panel for launching jobs and monitoring runs
+- React control panel for launching jobs and monitoring runs
 - Pytest coverage for datasets, training utilities, model forward pass, web jobs, and fallback behavior
 
 ## Status
@@ -43,7 +43,7 @@ Optional extras:
 
 - `dev`: pytest
 - `accelerate`: Hugging Face Accelerate
-- `web`: Streamlit and pandas
+- `web`: FastAPI, Uvicorn, HTTP client tooling, and legacy web dependencies
 
 ## Installation
 
@@ -126,14 +126,14 @@ accelerate launch --num_processes 2 -m skull.cli.pretrain \
 
 ## Web App
 
-Project Skull includes a Streamlit app for a simpler local workflow:
+Project Skull includes a React, Tailwind CSS, GSAP, and FastAPI control panel for a sharper local workflow:
 
 - See pipeline readiness at a glance
 - Launch train, eval, sample, and test jobs
 - Monitor active jobs and logs
 - Inspect run metrics, checkpoints, errors, and samples
 - Browse configs, data assets, and scripts
-- Switch between auto, light, and dark appearance modes
+- Use a more intentional dashboard, launch studio, ops console, and assets browser
 
 Install the web extra and launch:
 
@@ -146,6 +146,14 @@ After installation, you can also run:
 
 ```bash
 skull-web
+```
+
+To work on the frontend source itself, use the Vite app in `frontend/`:
+
+```bash
+npm install --prefix frontend
+npm run dev --prefix frontend
+npm run build --prefix frontend
 ```
 
 ## Data Pipeline
@@ -308,7 +316,8 @@ Project_skull/
 │  ├─ tokenization/     # tokenizer wrappers
 │  ├─ train/            # trainers, optimizer, scheduler, checkpointing
 │  ├─ utils/            # shared utilities
-│  └─ web/              # Streamlit app and web job runner
+│  └─ web/              # FastAPI server, legacy app, and web job runner
+├─ frontend/            # React + Tailwind CSS + GSAP source
 ├─ tests/               # pytest suite
 ├─ pyproject.toml
 └─ requirements.txt
